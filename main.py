@@ -4,11 +4,10 @@ from pathlib import Path
 import sys
 import logging
 
-from game import Game
+from game import Game, NoMoreSkipsError
 from ui import UI
 from player import Player
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -78,7 +77,11 @@ def main(argv=None):
         game.start_round(category)
         while not game.round_over:
             choice_index = ui.prompt_player_for_answer(game.current_player, game.current_question)
-            result = game.submit_answer(game.current_player, choice_index)
+            try:
+                result = game.submit_answer(game.current_player, choice_index)
+            except NoMoreSkipsError as e:
+                logging.warning(e)
+                continue
             ui.show_submission_result(result)
     ui.show_final_scores()
     return 0

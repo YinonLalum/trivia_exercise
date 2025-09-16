@@ -1,6 +1,8 @@
 import logging
-from game import Game
+from game import Game, SubmissionResult
 import sys
+
+from player import Player
 
 
 class UI:
@@ -35,23 +37,26 @@ class UI:
         self._writeln(str(question))
         while True:
             try:
-                choice = input("Enter the number of your answer: ").strip()
+                choice = input("Enter the number of your answer(0 to skip): ").strip()
                 if not choice.isdigit():
                     self._logger.warning("Please enter a valid number.")
                     continue
                 choice_index = int(choice) - 1
-                if 0 <= choice_index < len(question.options):
+                if -1 <= choice_index < len(question.options):
                     return choice_index
                 else:
                     self._logger.warning(f"Please enter a number between 1 and {len(question.options)}.")
             except Exception as exc:
                 self._logger.error(f"Error: {exc}")
 
-    def show_submission_result(self, result):
-        if result.correct:
-            self._writeln("Correct!")
+    def show_submission_result(self, result: SubmissionResult):
+        if result.skipped:
+            self._writeln(f"{self.game.current_player.name} has {self.game.remaining_skips[self.game.current_player]} skips left!")
         else:
-            self._writeln("Incorrect.")
+            if result.correct:
+                self._writeln("Correct!")
+            else:
+                self._writeln("Incorrect.")
         if result.question_completed:
             self._writeln("Moving to next question...\n")
 
