@@ -83,7 +83,7 @@ class Game:
             raise RuntimeError(f"It's {self._round.current_player.name}'s turn")
 
         if self._round.question.is_correct(choice_index):
-            self._scores[player] += 1
+            self._scores[player] += self._round.question.score
             self._end_round()
             return SubmissionResult(
                 correct=True,
