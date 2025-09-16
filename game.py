@@ -1,50 +1,45 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Dict, Optional, Iterable
+from typing import List, Optional, Iterable
 import random
 
-from .questions import TriviaQuestion
+from questions import TriviaQuestion
+from player import Player
 
 
 @dataclass(frozen=True)
-class RoundResult:
+class SubmissionResult:
     correct: bool
-    round_ended: bool
-    question_advanced: bool
+    question_completed: bool
     scoring_player: Optional["Player"]
     next_player: Optional["Player"]
 
 
-@dataclass(frozen=True)
-class Attempt:
-    choice_index: int
-
-
 @dataclass
-class Player:
-    name: str
-    score: int = 0
+class Round:
+    question: TriviaQuestion
+    players: List[Player]
+    current_player_index: int = 0
+    _players_asked: int = 0  # Track how many players have been asked in this round
 
-    def __post_init__(self) -> None:
-        if not isinstance(self.name, str) or not self.name.strip():
-            raise ValueError("Player name must be a non-empty string")
+    @property
+    def current_player(self) -> Player:
+        return self.players[self.current_player_index]
 
-    def submit_answer(self, choice_index: int) -> Attempt:
-        return Attempt(choice_index=choice_index)
+    def advance_player(self) -> None:
+        if self.round_over:
+            raise RuntimeError("Round is over")
+        self.current_player_index = (self.current_player_index + 1) % len(self.players)
+        self._players_asked += 1
+
+    @property
+    def round_over(self) -> bool:
+        return self._players_asked >= len(self.players) - 1
+
 
 
 class Game:
-    """Trivia game engine with rounds, scoring, and turn rotation.
-
-    Rules implemented:
-    - Questions are randomized once at the beginning of the game.
-    - A round is tied to a single question.
-    - The first player answers first; if wrong, the next player gets a chance, etc.
-    - If all players answer incorrectly once, the round ends with no points and the game moves on.
-    - Any number of players is supported (>= 1).
-    """
-
     def __init__(
         self,
         players: Iterable[Player],
@@ -57,97 +52,81 @@ class Game:
             raise ValueError("At least one question is required")
 
         self.players = player_list
-
         self.questions = list(questions)
         random.shuffle(self.questions)
-
+        self._scores = {p: 0 for p in self.players}
         self._current_question_index: int = 0
-        self._current_player_index: int = 0
-        self._attempts_this_round: int = 0
-        self._in_round: bool = False
+        self._round = None
+        self._next_start_index: int = 0
 
-    def start_round(self) -> TriviaQuestion:
-        if self.is_game_over():
+    def start_round(self):
+        if self.is_game_over:
             raise RuntimeError("Game is over; no more rounds can be started")
-        self._in_round = True
-        self._attempts_this_round = 0
-        self._current_player_index = 0
-        return self.current_question
-
-    def resolve_attempt(self, player: Player, attempt: Attempt) -> RoundResult:
-        """Apply a player's attempt to the current round.
-
-        Enforces turn order and advances state accordingly.
-        """
-        if self.is_game_over():
-            raise RuntimeError("Game is over; cannot submit answers")
-        if not self._in_round:
-            self.start_round()
-
-        if player is not self.current_player:
-            raise RuntimeError(f"It's {self.current_player.name}'s turn")
-
-        if self.current_question.is_correct(attempt.choice_index):
-            player.score += 1
-            self._end_round(advance_question=True)
-            return RoundResult(
-                correct=True,
-                round_ended=True,
-                question_advanced=True,
-                scoring_player=player,
-                next_player=self.current_player if not self.is_game_over() else None,
-            )
-
-        # Incorrect answer; move to next player or end the round if all tried once
-        self._attempts_this_round += 1
-        if self._attempts_this_round >= len(self.players):
-            self._end_round(advance_question=True)
-            return RoundResult(
-                correct=False,
-                round_ended=True,
-                question_advanced=True,
-                scoring_player=None,
-                next_player=self.current_player if not self.is_game_over() else None,
-            )
-
-        # Pass turn to next player
-        self._current_player_index = (self._current_player_index + 1) % len(self.players)
-        return RoundResult(
-            correct=False,
-            round_ended=False,
-            question_advanced=False,
-            scoring_player=None,
-            next_player=self.current_player,
+        self._round = Round(
+            question=self.current_question,
+            players=self.players,
+            current_player_index=self._next_start_index,
         )
 
+    def submit_answer(self, player: Player, choice_index: int) -> SubmissionResult:
+        if self.is_game_over:
+            raise RuntimeError("Game is over; cannot submit answers")
+            
+        if not self._round:
+            self.start_round()
+
+        if player is not self._round.current_player:
+            raise RuntimeError(f"It's {self._round.current_player.name}'s turn")
+
+        if self._round.question.is_correct(choice_index):
+            self._scores[player] += 1
+            self._end_round()
+            return SubmissionResult(
+                correct=True,
+                question_completed=True,
+                scoring_player=player,
+                next_player=None,
+            )
+        if self._round.round_over:
+            self._end_round()
+            return SubmissionResult(
+                correct=False,
+                question_completed=True,
+                scoring_player=None,
+                next_player=None,
+            )
+        self._round.advance_player()
+        return SubmissionResult(
+            correct=False,
+            question_completed=False,
+            scoring_player=None,
+            next_player=self._round.current_player,
+        )
+
+
+    @property
     def is_game_over(self) -> bool:
         return self._current_question_index >= len(self.questions)
 
-    def get_scores(self) -> Dict[str, int]:
-        return {p.name: p.score for p in self.players}
-
     @property
     def current_question(self) -> TriviaQuestion:
-        if self.is_game_over():
+        if self.is_game_over:
             raise RuntimeError("No current question; game is over")
         return self.questions[self._current_question_index]
 
     @property
     def current_player(self) -> Player:
-        return self.players[self._current_player_index]
+        if self._round:
+            return self._round.current_player
 
-    def _end_round(self, advance_question: bool) -> None:
-        self._in_round = False
-        self._attempts_this_round = 0
-        self._current_player_index = 0
-        if advance_question:
-            self._current_question_index += 1
+    def _end_round(self):
+        self._next_start_index = (self._next_start_index + 1) % len(self.players)
+        self._current_question_index += 1
+        self._round = None
 
-
-def load_questions_from_json(objects: Iterable[dict]) -> List[TriviaQuestion]:
-    """Utility to convert iterable of dicts to `TriviaQuestion` instances.
-
-    Expected dict schema matches `TriviaQuestion.from_dict`.
-    """
-    return [TriviaQuestion.from_dict(obj) for obj in objects]
-
+    @staticmethod
+    def load_questions_from_json(objects: Iterable[dict]) -> List[TriviaQuestion]:
+        return [TriviaQuestion.from_dict(obj) for obj in objects]
+    
+    def get_player_score(self,player : Player):
+        return self._scores[player]

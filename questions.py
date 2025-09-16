@@ -1,13 +1,7 @@
-import json
 from typing import List, Dict, Any
 
 class TriviaQuestion:
     def __init__(self, question: str, options: List[str], answer: int) -> None:
-        """
-        question: str - The question text.
-        options: list of str - The possible answer choices.
-        answer: int - The index of the correct answer in options.
-        """
         if not isinstance(question, str) or not question.strip():
             raise ValueError("Question must be a non-empty string.")
         if not isinstance(options, list) or len(options) < 2:
@@ -22,17 +16,14 @@ class TriviaQuestion:
         self.answer = answer
 
     def is_correct(self, choice_index: int) -> bool:
-        """Returns True if the given choice_index is the correct answer."""
         return choice_index == self.answer
 
     def __str__(self) -> str:
-        """Returns a formatted string representation of the question and options."""
         options_str = "\n".join(f"{idx + 1}. {opt}" for idx, opt in enumerate(self.options))
         return f"{self.question}\n{options_str}"
 
     @staticmethod
     def from_dict(data: Dict[str, Any]) -> "TriviaQuestion":
-        """Create a TriviaQuestion from a dictionary, with validation."""
         if not isinstance(data, dict):
             raise ValueError("Each question must be a dictionary.")
         required_keys = {"question", "options", "answer"}
