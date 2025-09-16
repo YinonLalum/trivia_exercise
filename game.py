@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Iterable
+from typing import List, Optional, Iterable, Dict
 import random
 
 from questions import TriviaQuestion
@@ -19,7 +19,7 @@ class Round:
     question: TriviaQuestion
     players: List[Player]
     current_player_index: int = 0
-    _players_asked: int = 0  # Track how many players have been asked in this round
+    _players_asked: int = 0 
 
     @property
     def current_player(self) -> Player:
@@ -33,7 +33,7 @@ class Round:
 
     @property
     def round_over(self) -> bool:
-        return self._players_asked >= len(self.players) - 1
+        return self._players_asked >= len(self.players)
 
 
 
@@ -51,17 +51,23 @@ class Game:
 
         self.players = player_list
         self.questions = list(questions)
-        random.shuffle(self.questions)
+        self._remaining_questions_by_category: Dict[str, List[TriviaQuestion]] = {}
+        for question in self.questions:
+            self._remaining_questions_by_category.setdefault(question.category, []).append(question)
+        for category_questions in self._remaining_questions_by_category.values():
+            random.shuffle(category_questions)
         self._scores = {p: 0 for p in self.players}
-        self._current_question_index: int = 0
         self._round = None
         self._next_start_index: int = 0
 
-    def start_round(self):
+    def start_round(self, category: str):
         if self.is_game_over:
             raise RuntimeError("Game is over; no more rounds can be started")
+        remaining = self._remaining_questions_by_category.get(category, [])
+        if not remaining:
+            raise RuntimeError(f"No questions remaining for category '{category}'")
         self._round = Round(
-            question=self.current_question,
+            question=remaining.pop(),
             players=self.players,
             current_player_index=self._next_start_index,
         )
@@ -71,7 +77,7 @@ class Game:
             raise RuntimeError("Game is over; cannot submit answers")
             
         if not self._round:
-            self.start_round()
+            raise RuntimeError("Round hasn't started yet!")
 
         if player is not self._round.current_player:
             raise RuntimeError(f"It's {self._round.current_player.name}'s turn")
@@ -83,13 +89,13 @@ class Game:
                 correct=True,
                 question_completed=True,
             )
+        self._round.advance_player()
         if self._round.round_over:
             self._end_round()
             return SubmissionResult(
                 correct=False,
                 question_completed=True,
             )
-        self._round.advance_player()
         return SubmissionResult(
             correct=False,
             question_completed=False,
@@ -98,13 +104,13 @@ class Game:
 
     @property
     def is_game_over(self) -> bool:
-        return self._current_question_index >= len(self.questions)
+        return sum(len(v) for v in self._remaining_questions_by_category.values()) == 0 and self._round is None
 
     @property
     def current_question(self) -> TriviaQuestion:
-        if self.is_game_over:
-            raise RuntimeError("No current question; game is over")
-        return self.questions[self._current_question_index]
+        if not self._round:
+            raise RuntimeError("No current question; round has not started")
+        return self._round.question
 
     @property
     def current_player(self) -> Player:
@@ -113,8 +119,10 @@ class Game:
 
     def _end_round(self):
         self._next_start_index = (self._next_start_index + 1) % len(self.players)
-        self._current_question_index += 1
         self._round = None
+
+    def available_categories(self) -> List[str]:
+        return [c for c, category_questions in self._remaining_questions_by_category.items() if category_questions]
 
     @staticmethod
     def load_questions_from_json(objects: Iterable[dict]) -> List[TriviaQuestion]:
@@ -122,3 +130,7 @@ class Game:
     
     def get_player_score(self,player : Player):
         return self._scores[player]
+
+    @property
+    def round_over(self) -> bool:
+        return not bool(self._round)

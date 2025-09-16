@@ -9,6 +9,27 @@ class UI:
         self._out = output_stream
         self._logger = logging.getLogger(__name__)
 
+    def prompt_category(self):
+        categories = self.game.available_categories()
+        if not categories:
+            raise RuntimeError("No categories available")
+        self._writeln("Choose a category:")
+        for idx, cat in enumerate(categories):
+            self._writeln(f"{idx + 1}. {cat}")
+        while True:
+            try:
+                choice = input("Enter the number of your category: ").strip()
+                if not choice.isdigit():
+                    self._logger.warning("Please enter a valid number.")
+                    continue
+                choice_index = int(choice) - 1
+                if 0 <= choice_index < len(categories):
+                    return categories[choice_index]
+                else:
+                    self._logger.warning(f"Please enter a number between 1 and {len(categories)}.")
+            except Exception as exc:
+                self._logger.error(f"Error: {exc}")
+
     def prompt_player_for_answer(self, player, question):
         self._writeln(f"{player.name}, it's your turn!")
         self._writeln(str(question))

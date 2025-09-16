@@ -73,13 +73,13 @@ def main(argv=None):
 
     game = Game(players, questions)
     ui = UI(game)
-    game.start_round()
     while not game.is_game_over:
-        choice_index = ui.prompt_player_for_answer(game.current_player, game.current_question)
-        result = game.submit_answer(game.current_player, choice_index)
-        ui.show_submission_result(result)
-        if result.question_completed and not game.is_game_over:
-            game.start_round()
+        category = ui.prompt_category()
+        game.start_round(category)
+        while not game.round_over:
+            choice_index = ui.prompt_player_for_answer(game.current_player, game.current_question)
+            result = game.submit_answer(game.current_player, choice_index)
+            ui.show_submission_result(result)
     ui.show_final_scores()
     return 0
 
