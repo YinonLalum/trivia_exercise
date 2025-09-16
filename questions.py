@@ -2,6 +2,7 @@ from typing import List, Dict, Any
 
 class TriviaQuestion:
     def __init__(self, question: str, options: List[str], answer: int) -> None:
+        import random
         if not isinstance(question, str) or not question.strip():
             raise ValueError("Question must be a non-empty string.")
         if not isinstance(options, list) or len(options) < 2:
@@ -12,8 +13,15 @@ class TriviaQuestion:
             raise ValueError("Answer must be an integer index within the range of options.")
 
         self.question = question
-        self.options = options
-        self.answer = answer
+
+        # Randomize options and keep track of the correct answer index
+        option_tuples = list(enumerate(options))
+        random.shuffle(option_tuples)
+        self.options = [opt for idx, opt in option_tuples]
+        for new_idx, (orig_idx, _) in enumerate(option_tuples):
+            if orig_idx == answer:
+                self.answer = new_idx
+                break
 
     def is_correct(self, choice_index: int) -> bool:
         return choice_index == self.answer

@@ -29,14 +29,10 @@ class UI:
     def show_submission_result(self, result):
         if result.correct:
             self._writeln("Correct!")
-            if result.scoring_player:
-                self._writeln(f"{result.scoring_player.name} scores a point!")
         else:
             self._writeln("Incorrect.")
         if result.question_completed:
             self._writeln("Moving to next question...\n")
-        elif result.next_player:
-            self._writeln(f"Next up: {result.next_player.name}")
 
     def show_final_scores(self):
         self._writeln("\nGame Over! Final Scores:")

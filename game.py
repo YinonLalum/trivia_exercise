@@ -12,8 +12,6 @@ from player import Player
 class SubmissionResult:
     correct: bool
     question_completed: bool
-    scoring_player: Optional["Player"]
-    next_player: Optional["Player"]
 
 
 @dataclass
@@ -84,23 +82,17 @@ class Game:
             return SubmissionResult(
                 correct=True,
                 question_completed=True,
-                scoring_player=player,
-                next_player=None,
             )
         if self._round.round_over:
             self._end_round()
             return SubmissionResult(
                 correct=False,
                 question_completed=True,
-                scoring_player=None,
-                next_player=None,
             )
         self._round.advance_player()
         return SubmissionResult(
             correct=False,
             question_completed=False,
-            scoring_player=None,
-            next_player=self._round.current_player,
         )
 
 
