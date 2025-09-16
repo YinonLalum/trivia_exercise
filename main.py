@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import sys
 import logging
+from typing import Any, List
 
 from game import Game, NoMoreSkipsError
 from ui import UI
@@ -11,13 +12,11 @@ from player import Player
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger(__name__)
 
-def parse_arguments(argv=None):
+def parse_arguments(argv: List[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Parse a JSON file and print the resulting object."
     )
@@ -35,7 +34,7 @@ def parse_arguments(argv=None):
     return parser.parse_args(argv)
 
 
-def load_json_file(file_path):
+def load_json_file(file_path: str) -> Any:
     path = Path(file_path).expanduser()
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
@@ -46,7 +45,7 @@ def load_json_file(file_path):
 
  
 
-def main(argv=None):
+def main(argv: List[str] | None = None) -> int:
     args = parse_arguments(argv)
     try:
         data = load_json_file(args.json_file)

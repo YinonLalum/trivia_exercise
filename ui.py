@@ -1,20 +1,26 @@
+from __future__ import annotations
 import logging
+from typing import TextIO, TYPE_CHECKING
 from game import Game, SubmissionResult
 import sys
 
 from player import Player
+if TYPE_CHECKING:
+    from questions import TriviaQuestion
 
 
 class UI:
-    def __init__(self, game: Game, output_stream=sys.stdout):
+    def __init__(self, game: Game, output_stream: TextIO = sys.stdout):
         self.game = game
         self._out = output_stream
         self._logger = logging.getLogger(__name__)
 
-    def prompt_category(self):
+    def prompt_category(self) -> str:
         categories = self.game.available_categories()
         if not categories:
             raise RuntimeError("No categories available")
+        if len(categories) == 1:
+            return categories[0]
         self._writeln("Choose a category:")
         for idx, cat in enumerate(categories):
             self._writeln(f"{idx + 1}. {cat}")
@@ -32,7 +38,7 @@ class UI:
             except Exception as exc:
                 self._logger.error(f"Error: {exc}")
 
-    def prompt_player_for_answer(self, player, question):
+    def prompt_player_for_answer(self, player: Player, question: TriviaQuestion) -> int:
         self._writeln(f"{player.name}, it's your turn!")
         self._writeln(str(question))
         while True:
@@ -49,7 +55,7 @@ class UI:
             except Exception as exc:
                 self._logger.error(f"Error: {exc}")
 
-    def show_submission_result(self, result: SubmissionResult):
+    def show_submission_result(self, result: SubmissionResult) -> None:
         if result.skipped:
             self._writeln(f"{self.game.current_player.name} has {self.game.remaining_skips[self.game.current_player]} skips left!")
         else:
@@ -60,12 +66,12 @@ class UI:
         if result.question_completed:
             self._writeln("Moving to next question...\n")
 
-    def show_final_scores(self):
+    def show_final_scores(self) -> None:
         self._writeln("\nGame Over! Final Scores:")
         for player in self.game.players:
             self._writeln(f"{player.name}: {self.game.get_player_score(player)}")
 
-    def _writeln(self, text: str):
+    def _writeln(self, text: str) -> None:
         self._out.write(f"{text}\n")
         try:
             self._out.flush()

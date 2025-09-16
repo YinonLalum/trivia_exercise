@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Iterable, Dict
+from typing import List, Optional, Iterable, Dict, Any
 import random
 
 from questions import TriviaQuestion
@@ -18,7 +18,7 @@ class NoMoreSkipsError(RuntimeError):
 class SubmissionResult:
     correct: bool
     question_completed: bool
-    skipped: Optional[bool] = False
+    skipped: bool = False
 
 
 @dataclass
@@ -27,7 +27,7 @@ class Round:
     players: List[Player]
     current_player_index: int = 0
     _players_asked: int = 0
-    round_over: Optional[bool] = False
+    round_over: bool = False
 
     @property
     def current_player(self) -> Player:
@@ -55,20 +55,20 @@ class Game:
         if not questions:
             raise ValueError("At least one question is required")
 
-        self.players = player_list
-        self.questions = list(questions)
+        self.players: List[Player] = player_list
+        self.questions: List[TriviaQuestion] = list(questions)
         self._remaining_questions_by_category: Dict[str, List[TriviaQuestion]] = {}
         for question in self.questions:
             self._remaining_questions_by_category.setdefault(
                 question.category, []).append(question)
         for category_questions in self._remaining_questions_by_category.values():
             random.shuffle(category_questions)
-        self._scores = {p: 0 for p in self.players}
-        self._round = None
+        self._scores: Dict[Player, int] = {p: 0 for p in self.players}
+        self._round: Optional[Round] = None
         self._next_start_index: int = 0
-        self.remaining_skips = {p: DEFAULT_REMAINING_SKIPS for p in self.players}
+        self.remaining_skips: Dict[Player, int] = {p: DEFAULT_REMAINING_SKIPS for p in self.players}
 
-    def start_round(self, category: str):
+    def start_round(self, category: str) -> None:
         if self.is_game_over:
             raise RuntimeError("Game is over; no more rounds can be started")
         remaining = self._remaining_questions_by_category.get(category, [])
@@ -120,28 +120,30 @@ class Game:
 
     @property
     def current_player(self) -> Player:
-        if self._round:
-            return self._round.current_player
+        if not self._round:
+            raise RuntimeError("No current player; round has not started")
+        return self._round.current_player
 
     def _end_round(self, correct: bool = False, skipped: bool = False) -> SubmissionResult:
         self._next_start_index = (self._next_start_index + 1) % len(self.players)
-        self._round.round_over = True
+        if self._round:
+            self._round.round_over = True
         return SubmissionResult(
             correct=correct,
             question_completed=True,
-            skipped = skipped
+            skipped=skipped
         )
 
     def available_categories(self) -> List[str]:
         return [c for c, category_questions in self._remaining_questions_by_category.items() if category_questions]
 
     @staticmethod
-    def load_questions_from_json(objects: Iterable[dict]) -> List[TriviaQuestion]:
+    def load_questions_from_json(objects: Iterable[Dict[str, Any]]) -> List[TriviaQuestion]:
         return [TriviaQuestion.from_dict(obj) for obj in objects]
 
-    def get_player_score(self, player: Player):
+    def get_player_score(self, player: Player) -> int:
         return self._scores[player]
 
     @property
     def round_over(self) -> bool:
-        return self._round.round_over
+        return False if self._round is None else self._round.round_over

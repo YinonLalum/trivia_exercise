@@ -1,4 +1,5 @@
 from typing import List, Dict, Any
+import random
 
 # Define the constant set of allowed categories
 ALLOWED_CATEGORIES: List[str] = [
@@ -11,7 +12,6 @@ ALLOWED_CATEGORIES: List[str] = [
 
 class TriviaQuestion:
     def __init__(self, question: str, options: List[str], answer: int, category: str, score: int) -> None:
-        import random
         if not isinstance(question, str) or not question.strip():
             raise ValueError("Question must be a non-empty string.")
         if not isinstance(options, list) or len(options) < 2:
@@ -55,7 +55,7 @@ class TriviaQuestion:
     def from_dict(data: Dict[str, Any]) -> "TriviaQuestion":
         if not isinstance(data, dict):
             raise ValueError("Each question must be a dictionary.")
-        required_keys = {"question", "options", "answer", "category"}
+        required_keys = {"question", "options", "answer", "category", "score"}
         if not required_keys.issubset(data):
             missing = required_keys - set(data)
             raise ValueError(f"Missing keys in question: {missing}")
@@ -64,5 +64,5 @@ class TriviaQuestion:
             options=data["options"],
             answer=data["answer"],
             category=data["category"],
-            score = data["score"]
+            score=data["score"]
         )
