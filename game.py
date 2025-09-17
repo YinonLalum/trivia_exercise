@@ -3,13 +3,14 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Optional, Iterable, Dict, Any
 import random
+import requests
 
 from questions import TriviaQuestion
 from player import Player
 
 DEFAULT_REMAINING_SKIPS = 2
 SKIP_QUESTION_INDEX = -1
-
+API_URL = "https://opentdb.com/api.php"
 class NoMoreSkipsError(RuntimeError):
     pass
 
@@ -139,6 +140,12 @@ class Game:
 
     @staticmethod
     def load_questions_from_json(objects: Iterable[Dict[str, Any]]) -> List[TriviaQuestion]:
+        return [TriviaQuestion.from_dict(obj) for obj in objects]
+
+    @staticmethod
+    def load_questions_from_api(question_count: int) -> List[TriviaQuestion]:
+        response = requests.get(API_URL + f"?amount={question_count}")
+        objects = response.json()["results"]
         return [TriviaQuestion.from_dict(obj) for obj in objects]
 
     def get_player_score(self, player: Player) -> int:

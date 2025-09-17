@@ -1,38 +1,38 @@
 [
   {
     "question": "What is the capital of France?",
-    "options": ["Berlin", "Madrid", "Paris", "Rome"],
-    "answer": 2,
+    "incorrect_answers": ["Berlin", "Madrid", "Rome"],
+    "correct_answer": "Paris",
     "category": "Geography",
-    "score": 1
+    "difficulty": "easy"
   },
   {
     "question": "Which planet is known as the Red Planet?",
-    "options": ["Earth", "Mars", "Jupiter", "Venus"],
-    "answer": 1,
+    "incorrect_answers": ["Earth",  "Jupiter", "Venus"],
+    "correct_answer": "Mars",
     "category": "Science",
-    "score": 2
+    "difficulty": "medium"
   },
   {
     "question": "Who wrote 'To Kill a Mockingbird'?",
-    "options": ["Harper Lee", "Mark Twain", "Ernest Hemingway", "Jane Austen"],
-    "answer": 0,
+    "incorrect_answers": ["Mark Twain", "Ernest Hemingway", "Jane Austen"],
+    "correct_answer": "Harper Lee",
     "category": "Literature",
-    "score": 3
+    "difficulty": "hard"
   },
   {
     "question": "What is the largest ocean on Earth?",
-    "options": ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean", "Pacific Ocean"],
-    "answer": 3,
+    "incorrect_answers": ["Atlantic Ocean", "Indian Ocean", "Arctic Ocean"],
+    "correct_answer": "Pacific Ocean",
     "category": "Geography",
-    "score": 2
+    "difficulty": "medium"
   },
   {
     "question": "What is the chemical symbol for Gold?",
-    "options": ["Ag", "Au", "Gd", "Go"],
-    "answer": 1,
+    "incorrect_answers": ["Au", "Gd", "Go"],
+    "correct_answer": "Ag",
     "category": "Science",
-    "score": 3
+    "difficulty": "hard"
   }
 ]
 

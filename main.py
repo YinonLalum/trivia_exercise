@@ -18,11 +18,21 @@ logger = logging.getLogger(__name__)
 
 def parse_arguments(argv: List[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Parse a JSON file and print the resulting object."
+        description="A Trivia Game!"
     )
     parser.add_argument(
-        "json_file",
-        help="Path to the JSON file to parse",
+        "--json_file",
+        help="Path to the questions json",
+        action="store",
+        type=str,
+        default=None,
+    )
+    parser.add_argument(
+        "--question_count",
+        help="How many questions should be in the game",
+        action="store",
+        default=10,
+        type=int
     )
     parser.add_argument(
         "--players_count",
@@ -47,23 +57,25 @@ def load_json_file(file_path: str) -> Any:
 
 def main(argv: List[str] | None = None) -> int:
     args = parse_arguments(argv)
-    try:
-        data = load_json_file(args.json_file)
-    except FileNotFoundError as exc:
-        logger.error(str(exc))
-        return 2
-    except IsADirectoryError as exc:
-        logger.error(str(exc))
-        return 2
-    except json.JSONDecodeError as exc:
-        location = f"line {exc.lineno}, column {exc.colno}"
-        logger.error(f"Invalid JSON in {args.json_file}: {exc.msg} ({location})")
-        return 3
-    except Exception as exc:
-        logger.error(f"Unexpected error reading {args.json_file}: {exc}")
-        return 1
-
-    questions = Game.load_questions_from_json(data)
+    if args.json_file:
+        try:
+            data = load_json_file(args.json_file)
+        except FileNotFoundError as exc:
+            logger.error(str(exc))
+            return 2
+        except IsADirectoryError as exc:
+            logger.error(str(exc))
+            return 2
+        except json.JSONDecodeError as exc:
+            location = f"line {exc.lineno}, column {exc.colno}"
+            logger.error(f"Invalid JSON in {args.json_file}: {exc.msg} ({location})")
+            return 3
+        except Exception as exc:
+            logger.error(f"Unexpected error reading {args.json_file}: {exc}")
+            return 1
+        questions = Game.load_questions_from_json(data)
+    else:
+        questions = Game.load_questions_from_api(args.question_count)
     players = []
     for i in range(args.players_count):
         input_name = input(f"Enter name for player {i+1}: ")
